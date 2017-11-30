@@ -1,9 +1,10 @@
 import tensorflow as tf
 
 from tensorflow.python.ops import math_ops, init_ops
-from tensorflow.python.ops.rnn_cell_impl import RNNCell, _linear
+from tensorflow.python.ops.rnn_cell_impl import RNNCell, _linear, _Linear
 
-class MinimalRNNCell(RNNCell): 
+
+class MinimalRNNCell(RNNCell):
     """Minimal RNN.
        This implementation is based on:
        Minmin Chen (2017)
@@ -11,10 +12,10 @@ class MinimalRNNCell(RNNCell):
        https://arxiv.org/abs/1711.06788.pdf
     """
 
-    def __init__(self, 
+    def __init__(self,
                  num_units,
                  activation=None,
-                 kernel_initializer=None, 
+                 kernel_initializer=None,
                  bias_initializer=None):
       """Initialize the parameters for a cell.
         Args:
@@ -30,6 +31,8 @@ class MinimalRNNCell(RNNCell):
       self._num_units = num_units
       self._kernel_initializer = kernel_initializer
       self._bias_initializer = bias_initializer
+      self._linear = None
+      self._gate_linear = None
 
     @property
     def state_size(self):
@@ -56,26 +59,33 @@ class MinimalRNNCell(RNNCell):
               static shape inference.
             - If state is not `2D`.
         """
+
         # Phi projection to a latent space / candidate
-        with tf.variable_scope("candidate"):
-          z = self._activation(_linear(
-              inputs,
-              self._num_units,
-              True,
-              bias_initializer=self._bias_initializer,
-              kernel_initializer=self._kernel_initializer))
+        if self._linear is None:
+          with tf.variable_scope("candidate"):
+            self._linear = _Linear(
+                [inputs],
+                self._num_units,
+                True,
+                bias_initializer=self._bias_initializer,
+                kernel_initializer=self._kernel_initializer)
+
+        z = self._activation(self._linear([inputs]))
 
         # Update gate
-        bias_ones = self._bias_initializer
-        if self._bias_initializer is None:
-          bias_ones = init_ops.constant_initializer(1.0, dtype=inputs.dtype)
-        with tf.variable_scope("update_gate"):
-          u = math_ops.sigmoid(_linear(
-              [inputs, z],
-              self._num_units,
-              True,
-              bias_initializer=bias_ones,
-              kernel_initializer=self._kernel_initializer))
+        if self._gate_linear is None:
+          bias_ones = self._bias_initializer
+          if self._bias_initializer is None:
+            bias_ones = init_ops.constant_initializer(1.0, dtype=inputs.dtype)
+          with tf.variable_scope("update_gate"):
+            self._gate_linear = _Linear(
+                [z, state],
+                self._num_units,
+                True,
+                bias_initializer=bias_ones,
+                kernel_initializer=self._kernel_initializer)
+
+        u = math_ops.sigmoid(self._gate_linear([z, state]))
 
         # Activation step
         new_h = u * state + (1 - u) * z
