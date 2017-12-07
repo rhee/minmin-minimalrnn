@@ -11,4 +11,4 @@ MinimalRNN: Toward More Interpretable and Trainable Recurrent Neural Networks
 
 https://arxiv.org/abs/1711.06788v1
 
-<img src="minimal-rnn.png" style="width:22.5rem;margin:auto"/>
+<img src="minimal-rnn.png" style="width:150px;margin:auto" />
