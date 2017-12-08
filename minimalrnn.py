@@ -17,7 +17,7 @@ class MinimalRNNCell(RNNCell):
                  activation=None,
                  kernel_initializer=None,
                  bias_initializer=None,
-                 phi=None):
+                 phi_initializer=None):
       """Initialize the parameters for a cell.
         Args:
           num_units: int, number of units in the cell
@@ -32,7 +32,8 @@ class MinimalRNNCell(RNNCell):
       self._num_units = num_units
       self._kernel_initializer = kernel_initializer
       self._bias_initializer = bias_initializer
-      self._phi = phi
+      self._phi_initializer = phi_initializer
+      self._phi = None
       self._gate_linear = None
 
     @property
@@ -64,14 +65,21 @@ class MinimalRNNCell(RNNCell):
         # Phi projection to a latent space / candidate
         if self._phi is None:
           with tf.variable_scope("candidate"):
-            self._phi = _Linear(
-                [inputs],
-                self._num_units,
-                True,
-                bias_initializer=self._bias_initializer,
-                kernel_initializer=self._kernel_initializer)
+            if self._phi_initializer is not None:
+                self._phi = self._phi_initializer(
+                    inputs,
+                    self._num_units,
+                    bias_initializer=self._bias_initializer,
+                    kernel_initializer=self._kernel_initializer)
+            else:
+                self._phi = _Linear(
+                    inputs,
+                    self._num_units,
+                    True,
+                    bias_initializer=self._bias_initializer,
+                    kernel_initializer=self._kernel_initializer)
 
-        z = self._activation(self._phi([inputs]))
+        z = self._activation(self._phi(inputs))
 
         # Update gate
         if self._gate_linear is None:
