@@ -16,13 +16,14 @@ class MinimalRNNCell(RNNCell):
                  num_units,
                  activation=None,
                  kernel_initializer=None,
-                 bias_initializer=None):
+                 bias_initializer=None,
+                 phi=None):
       """Initialize the parameters for a cell.
         Args:
           num_units: int, number of units in the cell
           kernel_initializer: (optional) The initializer to use for the weight and
             projection matrices.
-          bias_initializer: (optional) The initializer to use for the bias matrices. 
+          bias_initializer: (optional) The initializer to use for the bias matrices.
             Default: vectors of ones.
       """
       super(MinimalRNNCell, self).__init__(_reuse=True)
@@ -31,7 +32,7 @@ class MinimalRNNCell(RNNCell):
       self._num_units = num_units
       self._kernel_initializer = kernel_initializer
       self._bias_initializer = bias_initializer
-      self._linear = None
+      self._phi = phi
       self._gate_linear = None
 
     @property
@@ -46,7 +47,7 @@ class MinimalRNNCell(RNNCell):
         """Run one step of minimal RNN.
           Args:
             inputs: input Tensor, 2D, batch x num_units.
-            state: a state Tensor, `2-D, batch x state_size`. 
+            state: a state Tensor, `2-D, batch x state_size`.
           Returns:
             A tuple containing:
             - A `2-D, [batch x num_units]`, Tensor representing the output of the
@@ -54,23 +55,23 @@ class MinimalRNNCell(RNNCell):
             - A `2-D, [batch x num_units]`, Tensor representing the new state of cell after reading `inputs` when
               the previous state was `state`.  Same type and shape(s) as `state`.
           Raises:
-            ValueError: 
+            ValueError:
             - If input size cannot be inferred from inputs via
               static shape inference.
             - If state is not `2D`.
         """
 
         # Phi projection to a latent space / candidate
-        if self._linear is None:
+        if self._phi is None:
           with tf.variable_scope("candidate"):
-            self._linear = _Linear(
+            self._phi = _Linear(
                 [inputs],
                 self._num_units,
                 True,
                 bias_initializer=self._bias_initializer,
                 kernel_initializer=self._kernel_initializer)
 
-        z = self._activation(self._linear([inputs]))
+        z = self._activation(self._phi([inputs]))
 
         # Update gate
         if self._gate_linear is None:
@@ -79,13 +80,13 @@ class MinimalRNNCell(RNNCell):
             bias_ones = init_ops.constant_initializer(1.0, dtype=inputs.dtype)
           with tf.variable_scope("update_gate"):
             self._gate_linear = _Linear(
-                [z, state],
+                [state, z],
                 self._num_units,
                 True,
                 bias_initializer=bias_ones,
                 kernel_initializer=self._kernel_initializer)
 
-        u = math_ops.sigmoid(self._gate_linear([z, state]))
+        u = math_ops.sigmoid(self._gate_linear([state, z]))
 
         # Activation step
         new_h = u * state + (1 - u) * z
