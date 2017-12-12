@@ -68,19 +68,19 @@ class MinimalRNNCell(RNNCell):
           with tf.variable_scope("phi"):
             if self._phi_initializer is not None:
                 self._phi = self._phi_initializer(
-                    [inputs],
+                    inputs,
                     self._num_units,
                     bias_initializer=self._bias_initializer,
                     kernel_initializer=self._kernel_initializer)
             else:
                 self._phi = _Linear(
-                    [inputs],
+                    inputs,
                     self._num_units,
                     True,
                     bias_initializer=self._bias_initializer,
                     kernel_initializer=self._kernel_initializer)
 
-        z = self._activation(self._phi([inputs]))
+        z = self._activation(self._phi(inputs))
 
         # Update gate
         if self._gate_linear is None:
