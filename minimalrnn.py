@@ -17,7 +17,8 @@ class MinimalRNNCell(RNNCell):
                  activation=None,
                  kernel_initializer=None,
                  bias_initializer=None,
-                 phi_initializer=None):
+                 phi_initializer=None,
+                 reuse=None):
       """Initialize the parameters for a cell.
         Args:
           num_units: int, number of units in the cell
@@ -26,7 +27,7 @@ class MinimalRNNCell(RNNCell):
           bias_initializer: (optional) The initializer to use for the bias matrices.
             Default: vectors of ones.
       """
-      super(MinimalRNNCell, self).__init__(_reuse=True)
+      super(MinimalRNNCell, self).__init__(_reuse=reuse)
 
       self._activation = activation or math_ops.tanh
       self._num_units = num_units
@@ -44,7 +45,7 @@ class MinimalRNNCell(RNNCell):
     def output_size(self):
       return self._num_units
 
-    def __call__(self, inputs, state, scope=None):
+    def call(self, inputs, state):
         """Run one step of minimal RNN.
           Args:
             inputs: input Tensor, 2D, batch x num_units.
@@ -62,24 +63,24 @@ class MinimalRNNCell(RNNCell):
             - If state is not `2D`.
         """
 
-        # Phi projection to a latent space / candidate
+        # Phi projection to a latent space
         if self._phi is None:
-          with tf.variable_scope("candidate"):
+          with tf.variable_scope("phi"):
             if self._phi_initializer is not None:
                 self._phi = self._phi_initializer(
-                    inputs,
+                    [inputs],
                     self._num_units,
                     bias_initializer=self._bias_initializer,
                     kernel_initializer=self._kernel_initializer)
             else:
                 self._phi = _Linear(
-                    inputs,
+                    [inputs],
                     self._num_units,
                     True,
                     bias_initializer=self._bias_initializer,
                     kernel_initializer=self._kernel_initializer)
 
-        z = self._activation(self._phi(inputs))
+        z = self._activation(self._phi([inputs]))
 
         # Update gate
         if self._gate_linear is None:
