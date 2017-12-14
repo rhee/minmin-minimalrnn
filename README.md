@@ -15,7 +15,11 @@ https://arxiv.org/abs/1711.06788v1
 
 # Use
 
-`from minimalrnn import MinimalRNNCell`
+Just import `minimalrnn.py`:
+
+  `from minimalrnn import MinimalRNNCell`
+
+and then use `MinimalRNNCell` like any other `RNNCell` objects.
 
 `example-mnist-minimal-rnn.ipynb` contains a simple MNIST RNN example, tried to show how to create a custom phi transformation function for the minimal-RNN.
 
