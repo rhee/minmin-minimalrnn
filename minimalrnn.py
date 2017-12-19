@@ -15,7 +15,7 @@ class MinimalRNNCell(RNNCell):
     def __init__(self,
                  num_units,
                  activation=None,
-                 kernel_initializer=tf.orthogonal_initializer(),
+                 kernel_initializer=None,
                  bias_initializer=None,
                  phi_initializer=None,
                  reuse=None):
