@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from tensorflow.python.ops import math_ops, init_ops
-from tensorflow.python.ops.rnn_cell_impl import RNNCell, _linear, _Linear
+from tensorflow.python.ops.rnn_cell_impl import RNNCell
 
 
 class MinimalRNNCell(RNNCell):
@@ -45,6 +45,10 @@ class MinimalRNNCell(RNNCell):
     def output_size(self):
       return self._num_units
 
+    @staticmethod
+    def _default_phi_(inputs, num_outputs):
+        pass
+
     def call(self, inputs, state):
         """Run one step of minimal RNN.
           Args:
@@ -66,19 +70,16 @@ class MinimalRNNCell(RNNCell):
         # Phi projection to a latent space
         if self._phi is None:
           with tf.variable_scope("phi"):
-            if self._phi_initializer is not None:
-                self._phi = self._phi_initializer(
-                    inputs,
-                    self._num_units,
-                    bias_initializer=self._bias_initializer,
-                    kernel_initializer=self._kernel_initializer)
+            if self._phi_initializer is None:
+              self._phi = lambda(inputs): tf.layers.dense(inputs, self._num_units, \
+                            kernel_initializer=self._kernel_initializer, \
+                            bias_initializer=self._bias_initializer)
             else:
-                self._phi = _Linear(
-                    inputs,
-                    self._num_units,
-                    True,
-                    bias_initializer=self._bias_initializer,
-                    kernel_initializer=self._kernel_initializer)
+              self._phi = self._phi_initializer(
+                  inputs,
+                  self._num_units,
+                  bias_initializer=self._bias_initializer,
+                  kernel_initializer=self._kernel_initializer)
 
         z = self._activation(self._phi(inputs))
 
@@ -88,14 +89,11 @@ class MinimalRNNCell(RNNCell):
           if self._bias_initializer is None:
             bias_ones = init_ops.constant_initializer(1.0, dtype=inputs.dtype)
           with tf.variable_scope("update_gate"):
-            self._gate_linear = _Linear(
-                [state, z],
-                self._num_units,
-                True,
-                bias_initializer=bias_ones,
-                kernel_initializer=self._kernel_initializer)
+            self._gate_linear = lambda inputs: tf.layers.dense(inputs, self._num_units, \
+                        bias_initializer=bias_ones, \
+                        kernel_initializer=self._kernel_initializer)
 
-        u = math_ops.sigmoid(self._gate_linear([state, z]))
+        u = math_ops.sigmoid(self._gate_linear(tf.concat([state, z],1)))
 
         # Activation step
         new_h = u * state + (1 - u) * z
