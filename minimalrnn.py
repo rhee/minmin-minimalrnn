@@ -1,10 +1,7 @@
+# coding: utf-8
 import tensorflow as tf
 
-from tensorflow.python.ops import math_ops, init_ops
-from tensorflow.python.ops.rnn_cell_impl import RNNCell
-
-
-class MinimalRNNCell(RNNCell):
+class MinimalRNNCell(tf.nn.rnn_cell.RNNCell):
     """Minimal RNN.
        This implementation is based on:
        Minmin Chen (2017)
@@ -29,7 +26,7 @@ class MinimalRNNCell(RNNCell):
       """
       super(MinimalRNNCell, self).__init__(_reuse=reuse)
 
-      self._activation = activation or math_ops.tanh
+      self._activation = activation or tf.tanh
       self._num_units = num_units
       self._kernel_initializer = kernel_initializer
       self._bias_initializer = bias_initializer
@@ -87,13 +84,13 @@ class MinimalRNNCell(RNNCell):
         if self._gate_linear is None:
           bias_ones = self._bias_initializer
           if self._bias_initializer is None:
-            bias_ones = init_ops.constant_initializer(1.0, dtype=inputs.dtype)
+            bias_ones = tf.constant_initializer(1.0, dtype=inputs.dtype)
           with tf.variable_scope("update_gate"):
             self._gate_linear = lambda inputs: tf.layers.dense(inputs, self._num_units, \
                         bias_initializer=bias_ones, \
                         kernel_initializer=self._kernel_initializer)
 
-        u = math_ops.sigmoid(self._gate_linear(tf.concat([state, z],1)))
+        u = tf.sigmoid(self._gate_linear(tf.concat([state, z],1)))
 
         # Activation step
         new_h = u * state + (1 - u) * z
