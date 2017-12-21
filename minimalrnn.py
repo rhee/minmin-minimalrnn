@@ -42,10 +42,6 @@ class MinimalRNNCell(tf.nn.rnn_cell.RNNCell):
     def output_size(self):
       return self._num_units
 
-    @staticmethod
-    def _default_phi_(inputs, num_outputs):
-        pass
-
     def call(self, inputs, state):
         """Run one step of minimal RNN.
           Args:
@@ -68,7 +64,7 @@ class MinimalRNNCell(tf.nn.rnn_cell.RNNCell):
         if self._phi is None:
           with tf.variable_scope("phi"):
             if self._phi_initializer is None:
-              self._phi = lambda(inputs): tf.layers.dense(inputs, self._num_units, \
+              self._phi = lambda inputs: tf.layers.dense(inputs, self._num_units, \
                             kernel_initializer=self._kernel_initializer, \
                             bias_initializer=self._bias_initializer)
             else:
