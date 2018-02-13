@@ -1,7 +1,7 @@
 # coding: utf-8
 import tensorflow as tf
 
-class MinimalRNNCell(tf.nn.rnn_cell.RNNCell):
+class MinimalRNNCell(tf.contrib.rnn.RNNCell):
     """Minimal RNN.
        This implementation is based on:
        Minmin Chen (2017)
@@ -24,7 +24,7 @@ class MinimalRNNCell(tf.nn.rnn_cell.RNNCell):
           bias_initializer: (optional) The initializer to use for the bias matrices.
             Default: vectors of ones.
       """
-      super(MinimalRNNCell, self).__init__(_reuse=reuse)
+      super(MinimalRNNCell, self).__init__() # _reuse=reuse)
 
       self._activation = activation or tf.tanh
       self._num_units = num_units
@@ -42,7 +42,11 @@ class MinimalRNNCell(tf.nn.rnn_cell.RNNCell):
     def output_size(self):
       return self._num_units
 
-    def call(self, inputs, state):
+    @staticmethod
+    def _default_phi_(inputs, num_outputs):
+        pass
+
+    def __call__(self, inputs, state):
         """Run one step of minimal RNN.
           Args:
             inputs: input Tensor, 2D, batch x num_units.
